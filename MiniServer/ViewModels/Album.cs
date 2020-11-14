@@ -17,7 +17,7 @@ namespace MiniServer.ViewModels
         public int Year { get; }
 
         [JsonPropertyName("tracks")]
-        public ImmutableList<Track> Tracks { get; }
+        public ImmutableList<Track> Tracks { get; } = null;
 
         [JsonPropertyName("artistID")]
         public int ArtistID { get; }
@@ -32,9 +32,9 @@ namespace MiniServer.ViewModels
             if (album.Releasedate.HasValue)
                 Year = album.Releasedate.Value.Year;
             if (album.Tracks is not null)
-                Tracks = ImmutableList.Create(album.Tracks.Select(track=>new Track(track)).ToArray());
+                Tracks = ImmutableList.Create(album.Tracks.Select(track => new Track(track)).ToArray());
             ArtistID = album.Artistid;
-            if(album.Artist is not null)
+            if (album.Artist is not null)
             {
                 Artist = album.Artist.Name;
             }
