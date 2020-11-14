@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -29,20 +30,21 @@ namespace MiniServer.Controllers
 
         [HttpGet]
         [Route("Tracks")]
-        public JsonResult Tracks(int? from, int? to)
+        [Produces("application/json")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        public ActionResult Tracks(int? from, int? to)
         {
             logger.LogDebug("Retrieving tracks list");
             if (from is null)
-                from = 0;
+                from = 1;
             if (to is null)
-                to = from + itemsPerPage;
+                to = from - 1 + itemsPerPage;
             else if (to < from)
                 to = from;
 
             IEnumerable<Track> tracks = _context.Tracks
                 .OrderBy(track => track.Id)
-                .Skip((int)from)
-                .Take((int)(to - from))
+                .Where(track => from <= track.Id && track.Id <= to)
                 .Include(t => t.Album)
                 .ThenInclude(a => a.Artist)
                 .Select(track => new Track(track));
@@ -54,6 +56,9 @@ namespace MiniServer.Controllers
 
         [HttpGet]
         [Route("Tracks/{id}")]
+        [Produces("application/json")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public ActionResult<Track> Track(int ID)
         {
 
@@ -77,7 +82,12 @@ namespace MiniServer.Controllers
 
         [HttpGet]
         [Route("Tracks/{id}/Play")]
-        public IActionResult Play(int ID)
+        [Produces("multipart/byteranges")]
+        [ProducesResponseType(StatusCodes.Status206PartialContent)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status416RequestedRangeNotSatisfiable)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public ActionResult Play(int ID)
         {
             logger.LogInformation("Retrieving track {trackID} stream", ID);
 
@@ -154,18 +164,21 @@ namespace MiniServer.Controllers
 
         [HttpGet]
         [Route("Albums")]
-        public JsonResult Albums(int? from, int? to)
+        [Produces("application/json")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        public ActionResult Albums(int? from, int? to)
         {
             logger.LogDebug("Retrieving albums list");
             if (from is null)
-                from = 0;
+                from = 1;
             if (to is null)
-                to = from + itemsPerPage;
+                to = from - 1 + itemsPerPage;
+            else if (to < from)
+                to = from;
 
             IEnumerable<Album> albums = _context.Albums
                 .OrderBy(album => album.Id)
-                .Skip((int)from - 1)
-                .Take((int)(to - from))
+                .Where(album => from <= album.Id && album.Id <= to)
                 .Include(album => album.Artist)
                 .Select(album => new Album(album));
 
@@ -176,6 +189,9 @@ namespace MiniServer.Controllers
 
         [HttpGet]
         [Route("Albums/{id}")]
+        [Produces("application/json")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public ActionResult<Album> Album(int ID)
         {
 
@@ -199,18 +215,21 @@ namespace MiniServer.Controllers
 
         [HttpGet]
         [Route("Artists")]
-        public JsonResult Artists(int? from, int? to)
+        [Produces("application/json")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        public ActionResult Artists(int? from, int? to)
         {
             logger.LogDebug("Retrieving artists list");
             if (from is null)
-                from = 0;
+                from = 1;
             if (to is null)
-                to = from + itemsPerPage;
+                to = from - 1 + itemsPerPage;
+            else if (to < from)
+                to = from;
 
             IEnumerable<Artist> artists = _context.Artists
                 .OrderBy(artist => artist.Id)
-                .Skip((int)from - 1)
-                .Take((int)(to - from))
+                .Where(artist => from <= artist.Id && artist.Id <= to)
                 .Include(artist => artist.Albums)
                 .Select(artist => new Artist(artist));
 
@@ -221,6 +240,9 @@ namespace MiniServer.Controllers
 
         [HttpGet]
         [Route("Artists/{id}")]
+        [Produces("application/json")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public ActionResult<Artist> Artist(int ID)
         {
 
