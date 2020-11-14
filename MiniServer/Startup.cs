@@ -1,16 +1,12 @@
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.HttpsPolicy;
-using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi.Models;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
+using MiniServer.Models;
+using System.Text.Json.Serialization;
 
 namespace MiniServer
 {
@@ -27,11 +23,19 @@ namespace MiniServer
         public void ConfigureServices(IServiceCollection services)
         {
 
-            services.AddControllers();
+            services.AddControllers()
+                .AddJsonOptions(o =>
+                {
+                    o.JsonSerializerOptions
+                      .ReferenceHandler = ReferenceHandler.Preserve;
+                });
             services.AddSwaggerGen(c =>
             {
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "MiniServer", Version = "v1" });
             });
+
+            services.AddDbContext<SongerContext>(options => options.UseNpgsql(Configuration.GetConnectionString("SongerContext")));
+
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
