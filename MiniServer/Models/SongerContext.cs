@@ -34,20 +34,22 @@ namespace MiniServer.Models
 
                 entity.Property(e => e.Id).HasColumnName("id");
 
-                entity.Property(e => e.Artistid).HasColumnName("artistid");
+                entity.Property(e => e.Artistid)
+                    .IsRequired()
+                    .HasColumnName("artistid");
 
                 entity.Property(e => e.Name)
                     .IsRequired()
                     .HasColumnName("name")
                     .HasColumnType("character varying");
 
-                entity.Property(e => e.Picture)
-                    .HasColumnName("picture")
-                    .HasColumnType("character varying");
-
                 entity.Property(e => e.Releasedate)
                     .HasColumnName("releasedate")
                     .HasColumnType("date");
+
+                entity.Property(e => e.Picture)
+                    .HasColumnName("picture")
+                    .HasColumnType("character varying");
 
                 entity.HasOne(d => d.Artist)
                     .WithMany(p => p.Albums)
@@ -77,19 +79,27 @@ namespace MiniServer.Models
 
                 entity.Property(e => e.Id).HasColumnName("id");
 
-                entity.Property(e => e.Albumid).HasColumnName("albumid");
-
-                entity.Property(e => e.Filepath)
-                    .IsRequired()
-                    .HasColumnName("filepath")
-                    .HasColumnType("character varying");
+                entity.Property(e => e.Albumid)
+                .IsRequired()
+                .HasColumnName("albumid");
 
                 entity.Property(e => e.Name)
                     .IsRequired()
                     .HasColumnName("name")
                     .HasColumnType("character varying");
 
-                entity.Property(e => e.Tracknumber).HasColumnName("tracknumber");
+                entity.Property(e => e.Tracknumber)
+                    .IsRequired()
+                    .HasColumnName("tracknumber");
+
+                entity.Property(e => e.Duration)
+                    .IsRequired()
+                    .HasColumnName("duration");
+
+                entity.Property(e => e.Filepath)
+                    .IsRequired()
+                    .HasColumnName("filepath")
+                    .HasColumnType("character varying");
 
                 entity.HasOne(d => d.Album)
                     .WithMany(p => p.Tracks)

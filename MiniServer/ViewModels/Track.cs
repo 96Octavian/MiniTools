@@ -35,11 +35,11 @@ namespace MiniServer.ViewModels
 
         public Track(Tracks track)
         {
-            // TODO: Duration
             ID = track.Id;
             Title = track.Name;
             Tracknumber = track.Tracknumber;
             AlbumID = track.Albumid;
+            Duration = TimeSpan.FromSeconds(track.Duration);
             if (track.Album is not null)
             {
                 Album = track.Album.Name;
