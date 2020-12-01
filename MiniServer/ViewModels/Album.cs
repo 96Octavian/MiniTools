@@ -17,7 +17,7 @@ namespace MiniServer.ViewModels
         public int Year { get; }
 
         [JsonPropertyName("tracks")]
-        public ImmutableList<Track> Tracks { get; } = null;
+        public ImmutableList<Track> Tracks { get; }
 
         [JsonPropertyName("artistID")]
         public int ArtistID { get; }

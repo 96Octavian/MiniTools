@@ -14,19 +14,20 @@ using System.Net.Http.Headers;
 
 namespace MiniServer.Controllers
 {
-    [Route("api/[controller]")]
     [ApiController]
+    [Route("api/[controller]")]
     public class LibraryController : ControllerBase
     {
         private readonly int itemsPerPage;
         private readonly ILogger<LibraryController> logger;
         private readonly SongerContext context;
 
-        private readonly IDictionary<string, MediaTypeHeaderValue> extensionToMimeType = new Dictionary<string, MediaTypeHeaderValue>()
-        {
-            {".mp3", new MediaTypeHeaderValue("audio/mpeg") },
-            {".flac", new MediaTypeHeaderValue("audio/flac") }
-        };
+        private readonly IDictionary<string, MediaTypeHeaderValue> extensionToMimeType =
+            new Dictionary<string, MediaTypeHeaderValue>
+            {
+                {".mp3", new MediaTypeHeaderValue("audio/mpeg")},
+                {".flac", new MediaTypeHeaderValue("audio/flac")}
+            };
 
         public LibraryController(IConfiguration configuration, ILogger<LibraryController> logger, SongerContext context)
         {
@@ -39,25 +40,24 @@ namespace MiniServer.Controllers
         [Route("Tracks")]
         [Produces("application/json")]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        public ActionResult<IEnumerable<Track>> Tracks(int? from, int? to)
+        public ActionResult<IEnumerable<Track>> Tracks(int? fromId, int? to)
         {
             logger.LogDebug(Request.GetDisplayUrl());
             logger.LogDebug("Retrieving tracks list");
-            if (from is null)
-                from = 1;
-            if (to is null)
-                to = from - 1 + itemsPerPage;
-            else if (to < from)
-                to = from;
+            fromId ??= 1;
+            to ??= fromId - 1 + itemsPerPage;
+            if (to < fromId)
+                to = fromId;
 
             IEnumerable<Track> tracks = context.Tracks
                 .OrderBy(track => track.Id)
-                .Where(track => from <= track.Id && track.Id <= to)
+                .Where(track => fromId <= track.Id && track.Id <= to)
                 .Include(t => t.Album)
                 .ThenInclude(a => a.Artist)
                 .Select(track => new Track(track));
 
-            logger.LogDebug("Sending {tracksCount} tracks ({requestedTracksCount} requested)", tracks.Count(), to - from + 1);
+            logger.LogDebug("Sending {tracksCount} tracks ({requestedTracksCount} requested)", tracks.Count(),
+                to - fromId + 1);
 
             return new JsonResult(tracks);
         }
@@ -67,18 +67,18 @@ namespace MiniServer.Controllers
         [Produces("application/json")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public ActionResult<Track> Track(int ID)
+        public ActionResult<Track> Track(int id)
         {
             logger.LogDebug(Request.GetDisplayUrl());
-            logger.LogInformation("Retrieving track {trackID} info", ID);
+            logger.LogInformation("Retrieving track {trackID} info", id);
 
             Tracks track = context.Tracks
-                    .Include(track => track.Album)
-                    .ThenInclude(album => album.Artist)
-                    .FirstOrDefault(track => track.Id == ID);
+                .Include(aTrack => aTrack.Album)
+                .ThenInclude(album => album.Artist)
+                .FirstOrDefault(aTrack => aTrack.Id == id);
             if (track is null)
             {
-                logger.LogDebug("Track {trackID} info not found", ID);
+                logger.LogDebug("Track {trackID} info not found", id);
                 return NotFound();
             }
             else
@@ -90,24 +90,24 @@ namespace MiniServer.Controllers
 
         [HttpGet]
         [Route("Tracks/{id}/Play")]
-        [Produces("audio/mpeg", new[] { "audio/flac" })]
+        [Produces("audio/mpeg", "audio/flac")]
         [ProducesResponseType(StatusCodes.Status206PartialContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status416RequestedRangeNotSatisfiable)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        public ActionResult Play(int ID)
+        public ActionResult Play(int id)
         {
             logger.LogDebug(Request.GetDisplayUrl());
-            logger.LogInformation("Retrieving track {trackID} stream", ID);
+            logger.LogInformation("Retrieving track {trackID} stream", id);
 
             Tracks track = context.Tracks
-                  .Include(track => track.Album)
-                  .ThenInclude(album => album.Artist)
-                  .FirstOrDefault(track => track.Id == ID);
+                .Include(aTrack => aTrack.Album)
+                .ThenInclude(album => album.Artist)
+                .FirstOrDefault(aTrack => aTrack.Id == id);
 
             if (track is null)
             {
-                logger.LogInformation("Track {trackID} info not found", ID);
+                logger.LogInformation("Track {trackID} info not found", id);
                 return NotFound();
             }
 
@@ -116,7 +116,8 @@ namespace MiniServer.Controllers
 
             if (!fileInfo.Exists)
             {
-                logger.LogInformation("Track {trackID} - {trackTitle} not found at {trackFile}", track.Id, track.Name, track.Filepath);
+                logger.LogInformation("Track {trackID} - {trackTitle} not found at {trackFile}", track.Id, track.Name,
+                    track.Filepath);
                 return NotFound();
             }
 
@@ -136,23 +137,28 @@ namespace MiniServer.Controllers
                 if (ranges.Count > 1)
                 {
                     logger.LogInformation("Multiple ranges not allowed");
-                    return StatusCode((int)HttpStatusCode.BadRequest);
+                    return StatusCode((int) HttpStatusCode.BadRequest);
                 }
-                RangeItemHeaderValue indices = ranges.FirstOrDefault();
+
+                RangeItemHeaderValue indices = ranges.First();
 
                 if (indices.From is null || indices.From >= fileInfo.Length)
                 {
                     if (indices.From is null)
                         logger.LogInformation("Invalid null start index");
                     else
-                        logger.LogInformation("Start range outside of boundaries (file length: {fileLength}, request start index: {startIndex}", indices.From);
-                    return StatusCode((int)HttpStatusCode.RequestedRangeNotSatisfiable);
+                        logger.LogInformation(
+                            "Start range outside of boundaries (file length: {fileLength}, request start index: {startIndex}",
+                            indices.From);
+                    return StatusCode((int) HttpStatusCode.RequestedRangeNotSatisfiable);
                 }
-                start = (long)indices.From;
-                end = (long)(indices.To != null && indices.To < fileInfo.Length ? indices.To : fileInfo.Length);
+
+                start = (long) indices.From;
+                end = (long) (indices.To != null && indices.To < fileInfo.Length ? indices.To : fileInfo.Length);
             }
 
-            logger.LogDebug("Reading from {startIndex} to {endIndex} ({bytesCount}/{fileLength} bytes)", start, end, end - start, fileInfo.Length);
+            logger.LogDebug("Reading from {startIndex} to {endIndex} ({bytesCount}/{fileLength} bytes)", start, end,
+                end - start, fileInfo.Length);
             // We are now ready to produce partial content.
             byte[] buffer = new byte[end - start];
             Stream fs = fileInfo.OpenRead();
@@ -160,43 +166,43 @@ namespace MiniServer.Controllers
             int read = fs.Read(buffer, 0, buffer.Length);
 
             Response.Headers.Add("Accept-Ranges", "bytes");
-            Response.StatusCode = (int)HttpStatusCode.PartialContent;
+            Response.StatusCode = (int) HttpStatusCode.PartialContent;
             Response.ContentType = extensionToMimeType[fileInfo.Extension].ToString();
             Response.Headers.Add("Content-Range", $"{start}-{start + read}/{fileInfo.Length}");
             Response.Body.WriteAsync(buffer)
                 .AsTask()
-                .ContinueWith((_) =>
+                .ContinueWith(_ =>
                 {
-                    logger.LogDebug("Finished writing track {trackID} - {trackTitle} ({bytesCount} bytes) to stream", track.Id, track.Name, end - start);
+                    logger.LogDebug("Finished writing track {trackID} - {trackTitle} ({bytesCount} bytes) to stream",
+                        track.Id, track.Name, end - start);
                     Response.CompleteAsync();
                 });
 
             return new EmptyResult();
-
         }
 
         [HttpGet]
         [Route("Albums")]
         [Produces("application/json")]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        public ActionResult<IEnumerable<Album>> Albums(int? from, int? to)
+        public ActionResult<IEnumerable<Album>> Albums(int? fromId, int? to)
         {
             logger.LogDebug(Request.GetDisplayUrl());
             logger.LogDebug("Retrieving albums list");
-            if (from is null)
-                from = 1;
+            fromId ??= 1;
             if (to is null)
-                to = from - 1 + itemsPerPage;
-            else if (to < from)
-                to = from;
+                to = fromId - 1 + itemsPerPage;
+            else if (to < fromId)
+                to = fromId;
 
             IEnumerable<Album> albums = context.Albums
-                 .OrderBy(album => album.Id)
-                 .Where(album => from <= album.Id && album.Id <= to)
-                 .Include(album => album.Artist)
-                 .Select(album => new Album(album));
+                .OrderBy(album => album.Id)
+                .Where(album => fromId <= album.Id && album.Id <= to)
+                .Include(album => album.Artist)
+                .Select(album => new Album(album));
 
-            logger.LogDebug("Sending {albumsCount} albums ({requestedAlbumsCount} requested)", albums.Count(), to - from + 1);
+            logger.LogDebug("Sending {albumsCount} albums ({requestedAlbumsCount} requested)", albums.Count(),
+                to - fromId + 1);
 
             return new JsonResult(albums);
         }
@@ -206,19 +212,19 @@ namespace MiniServer.Controllers
         [Produces("application/json")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public ActionResult<Album> Album(int ID)
+        public ActionResult<Album> Album(int id)
         {
             logger.LogDebug(Request.GetDisplayUrl());
-            logger.LogInformation("Retrieving album {albumID} info", ID);
+            logger.LogInformation("Retrieving album {albumID} info", id);
 
             Albums album = context.Albums
-                 .Include(album => album.Tracks)
-                 .Include(album => album.Artist)
-                 .FirstOrDefault(album => album.Id == ID);
+                .Include(anAlbum => anAlbum.Tracks)
+                .Include(anAlbum => anAlbum.Artist)
+                .FirstOrDefault(anAlbum => anAlbum.Id == id);
 
             if (album is null)
             {
-                logger.LogDebug("Album {albumID} info not found", ID);
+                logger.LogDebug("Album {albumID} info not found", id);
                 return NotFound();
             }
             else
@@ -232,24 +238,24 @@ namespace MiniServer.Controllers
         [Route("Artists")]
         [Produces("application/json")]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        public ActionResult<IEnumerable<Artist>> Artists(int? from, int? to)
+        public ActionResult<IEnumerable<Artist>> Artists(int? fromId, int? to)
         {
             logger.LogDebug(Request.GetDisplayUrl());
             logger.LogDebug("Retrieving artists list");
-            if (from is null)
-                from = 1;
+            fromId ??= 1;
             if (to is null)
-                to = from - 1 + itemsPerPage;
-            else if (to < from)
-                to = from;
+                to = fromId - 1 + itemsPerPage;
+            else if (to < fromId)
+                to = fromId;
 
             IEnumerable<Artist> artists = context.Artists
-                   .OrderBy(artist => artist.Id)
-                   .Where(artist => from <= artist.Id && artist.Id <= to)
-                   .Include(artist => artist.Albums)
-                   .Select(artist => new Artist(artist));
+                .OrderBy(artist => artist.Id)
+                .Where(artist => fromId <= artist.Id && artist.Id <= to)
+                .Include(artist => artist.Albums)
+                .Select(artist => new Artist(artist));
 
-            logger.LogDebug("Sending {artistsCount} artists ({requestedArtistsCount} requested)", artists.Count(), to - from + 1);
+            logger.LogDebug("Sending {artistsCount} artists ({requestedArtistsCount} requested)", artists.Count(),
+                to - fromId + 1);
 
             return new JsonResult(artists);
         }
@@ -259,19 +265,19 @@ namespace MiniServer.Controllers
         [Produces("application/json")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public ActionResult<Artist> Artist(int ID)
+        public ActionResult<Artist> Artist(int id)
         {
             logger.LogDebug(Request.GetDisplayUrl());
-            logger.LogInformation("Retrieving artist {artistID} info", ID);
+            logger.LogInformation("Retrieving artist {artistID} info", id);
 
             Artists artist = context.Artists
-                   .Include(artist => artist.Albums)
-                   .ThenInclude(album => album.Tracks)
-                   .FirstOrDefault(artist => artist.Id == ID);
+                .Include(anArtist => anArtist.Albums)
+                .ThenInclude(album => album.Tracks)
+                .FirstOrDefault(anArtist => anArtist.Id == id);
 
             if (artist is null)
             {
-                logger.LogDebug("Artist {artistID} info not found", ID);
+                logger.LogDebug("Artist {artistID} info not found", id);
                 return NotFound();
             }
             else

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace MiniServer.Models
 {
-    public partial class Albums
+    public class Albums
     {
         public Albums()
         {
@@ -16,7 +16,7 @@ namespace MiniServer.Models
         public DateTime? Releasedate { get; set; }
         public string Picture { get; set; }
 
-        public virtual Artists Artist { get; set; }
-        public virtual ICollection<Tracks> Tracks { get; set; }
+        public Artists Artist { get; set; }
+        public ICollection<Tracks> Tracks { get; protected set; }
     }
 }

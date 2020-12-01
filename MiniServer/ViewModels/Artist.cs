@@ -14,7 +14,7 @@ namespace MiniServer.ViewModels
         public string Name { get; }
 
         [JsonPropertyName("albums")]
-        public ImmutableList<Album> Albums { get; } = null;
+        public ImmutableList<Album> Albums { get; }
 
         public Artist(Artists artist)
         {

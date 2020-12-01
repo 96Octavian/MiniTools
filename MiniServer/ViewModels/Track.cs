@@ -28,7 +28,7 @@ namespace MiniServer.ViewModels
         public int Year { get; }
 
         [JsonPropertyName("tracknumber")]
-        public int Tracknumber { get; } = 0;
+        public int Tracknumber { get; }
 
         [JsonPropertyName("duration")]
         public TimeSpan Duration { get; }
@@ -45,11 +45,9 @@ namespace MiniServer.ViewModels
                 Album = track.Album.Name;
                 if (track.Album.Releasedate.HasValue)
                     Year = track.Album.Releasedate.Value.Year;
-                if (track.Album.Artist is not null)
-                {
-                    ArtistID = track.Album.Artistid;
-                    Artist = track.Album.Artist.Name;
-                }
+                if (track.Album.Artist is null) return;
+                ArtistID = track.Album.Artistid;
+                Artist = track.Album.Artist.Name;
             }
         }
     }

@@ -1,13 +1,11 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Configuration;
-using System;
 
 namespace MiniServer.Models
 {
     public partial class SongerContext : DbContext
     {
 
-        public SongerContext() : base()
+        public SongerContext()
         {
         }
 

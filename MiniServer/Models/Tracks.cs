@@ -1,6 +1,6 @@
 ﻿namespace MiniServer.Models
 {
-    public partial class Tracks
+    public class Tracks
     {
         public int Id { get; set; }
         public int Albumid { get; set; }
@@ -9,6 +9,6 @@
         public string Filepath { get; set; }
         public int Duration { get; set; }
 
-        public virtual Albums Album { get; set; }
+        public virtual Albums Album { get; protected set; }
     }
 }

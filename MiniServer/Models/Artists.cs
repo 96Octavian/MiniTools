@@ -2,7 +2,7 @@
 
 namespace MiniServer.Models
 {
-    public partial class Artists
+    public class Artists
     {
         public Artists()
         {
@@ -13,6 +13,6 @@ namespace MiniServer.Models
         public string Name { get; set; }
         public string Picture { get; set; }
 
-        public virtual ICollection<Albums> Albums { get; set; }
+        public virtual ICollection<Albums> Albums { get; protected set; }
     }
 }
